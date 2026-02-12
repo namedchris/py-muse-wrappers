@@ -1,6 +1,7 @@
 import csv
 from typing import Optional, Dict
-from device import Device
+from devices.device import Device
+from devices.callbacks import ButtonCallback
 from components.buttons.buttons import Button
 
 

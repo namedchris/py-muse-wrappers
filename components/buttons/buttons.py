@@ -1,6 +1,6 @@
 from typing import Callable, Optional
 from components.component import Component
-from callbacks import ButtonCallback
+from devices.callbacks import ButtonCallback
 from . import commands
 
 # Justification constants
