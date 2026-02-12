@@ -1,0 +1,270 @@
+^ANI Multistate Button Animation Command
+Syntax:
+^ANI-<vt addr range>,<start state>,<end state>,<time>
+Variable:
+variable text address range = 1 - 4000.
+start state = Beginning of button state (0= current state).
+end state = End of button state.
+time = In 1/10 second intervals.
+Programming
+71Modero X Series® G5 Programming Guide
+Button Commands (Cont.)
+^APF Add Page Flip Command. Add page flip action to a button. This command installs a page flip command to the
+Button Release event action.
+Syntax:
+^APF-<variable text address range>,<page flip action>,<page name>
+Variables:
+variable text address range = 1 - 4000.
+page flip action = (see the following)
+Stan[dardPage] - Flip to standard page
+Prev[iousPage] - Flip to previous page
+Show[Popup] - Show Popup page
+Hide[Popup] - Hide Popup page
+Togg[lePopup] - Toggle popup state
+ClearG[roup] - Clear popup page group from all pages
+ClearP[age] - Clear all pop-up pages from a page with the specified page name
+ClearA[ll] - Clear all pop-up pages from all pages
+Forget - Flip to standard page but forget for previous page
+page name = 1 - 50 ASCII characters.
+Example:
+SEND COMMAND Panel,"'^APF-400,Stan,Main Page'"
+Assigns a button to a standard page flip with page name 'Main Page'.
+^BSF Button Focus Command.
+Note: Select one button at a time (single variable text address). Do not assign a variable text address range to
+set focus to multiple buttons. Only one variable text address can be in focus at a time.
+Syntax:
+"'^BSF-<vt addr range>,<selection value>'"
+Variable:
+variable text address range = 1 - 4000.
+selection value = Unselect = 0 and select = 1.
+Example:
+SEND_COMMAND Panel,"'^BSF-500,1'"
+Sets the focus to the text area of the button.
+^BSM Button Submit Text Command. This command causes the text areas to send their text as strings to the NetLinx
+Master.
+Syntax:
+"'^BSM-<vt addr range>'"
+Variable:
+variable text address range = 1 - 4000.
+Example:
+SEND_COMMAND Panel,"'^BSM-500'"
+Returns a String of format "'<button name>-<text>'". The string is returned on the port a ^BIT command was
+received on, or if that has not occurred, is sent on the address port.
+^CPF Clear Page Flip Command. Clear all page flips from a button. This only clears PageFlip actions from the Button
+Release event action.
+Syntax:
+^CPF-<variable text address range>
+Variable:
+variable text address range = 1 - 4000.
+Example:
+SEND_COMMAND Panel,"'^CPF-500'"
+Clear all page flip actions from button address 500 RELEASE event action list.
+Programming
+72 Modero X Series® G5 Programming Guide
+Button Commands (Cont.)
+^GLH Set Bargraph High Range Command
+Syntax:
+"'^GLH-<vt addr range>,<bargraph hi>'"
+Sets the bargraph max range to <bargraph hi>. This does NOT affect the LEVEL value (if any) associated with
+this bargraph.
+Variables:
+Variable text address range = 1 - 4000.
+Bargraph hi is the new high value. It must be larger than the current low value.
+Example:
+SEND_COMMAND Panel, '^GLH-100,128'
+Set the max bargraph value to 128.
+^GLL Set Bargraph Low Range Command
+Syntax:
+^GLL-<vt addr range>,<bargraph low>
+Sets the bargraph min range to <bargraph low>. This does NOT affect the LEVEL value (if any) associated with
+this bargraph.
+Variables:
+Variable text address range = 1 - 4000.
+Bargraph low is the new low value. It must be smaller than the current high value.
+Example:
+SEND_COMMAND Panel, '^GLL-100,64'
+Set the min bargraph value to 64.
+^ENA Button Enable Command. Enable or disable buttons with a set variable text range.
+Syntax:
+"'^ENA-<vt addr range>,<command value>'"
+Variable:
+variable text address range = 1 - 4000.
+command value = (0= disable, 1= enable)
+Example:
+SEND_COMMAND Panel,"'^ENA-500.504&510.515,0'"
+Disables button pushes on buttons with variable text range 500-504 & 510-515.
+Programming
+73Modero X Series® G5 Programming Guide
+Button Commands (Cont.)
+^SCE Subpage Custom Event Command. Configures subpage custom events. This command can be used to enable
+or disable the transmission of custom events to the master whenever certain operations occur. For example, the
+system programmer may want to be notified whenever a subpage enters the anchor position.
+The notification mechanism is a custom event. The ^SCE command takes the form of a vt addr range specifying
+one or more subpage viewer buttons followed by a comma separated list of custom event numbers. If the
+number is 0 or blank for a given event type then no custom event will be transmitted when that event occurs. If a
+number is specified, then it is used as the EVENTID value for the custom event. The range of 32001 to 65535
+has been reserved in the panel for user custom event numbers. A different value could be used but might collide
+with other AMX event numbers. Event configuration is not permanent and all event numbers revert to the default
+of 0 when the panel restarts.
+Syntax:
+"'^SCE-<vt addr range>,<optional anchor event num>,<optional onscreen event num>,<optional
+offscreen event num>,<optional reorder event num>'"
+Variables:
+variable text address range = 1 - 4000.
+Anchor event number = 0 for no event or a value from 32001 to 65535.
+Onscreen event number = 0 for no event or a value from 32001 to 65535.
+Offscreen event number = 0 for no event or a value from 32001 to 65535.
+Reorder event number = 0 for no event or a value from 32001 to 65535.
+The events are:
+Anchor - a new subpage has docked in the anchor position.
+Onscreen - a docking operation has been completed and the subpages in the list are now onscreen. This list
+will include the anchor along with any subpages that may be partially onscreen.
+Offscreen - a docking operation has been completed and the subpages in the list are now offscreen.
+Reorder - the user has reordered the subpages in the set and the list contains all subpages in the new order
+without regard to onscreen or offscreen state.
+In response to any or all of the above events, the panel will create a string which is a list of subpage names
+separated by a pipe (|) character. The string for the anchor event is a single subpage name. If this string is too
+long to be transmitted in a single custom event, then multiple custom events will be created and transmitted.
+If defined, the events are sent in this order when a docking operation completes on a given viewer button:
+anchor, onscreen, offscreen.
+If reorder is defined and occurs, it is sent first: reorder, anchor, onscreen, offscreen.
+The format of the custom event transmitted to the master is as follows:
+CUSTOM.TYPE = EVENTID = the non-zero event number in the ^SCE command
+CUSTOM.ID = ADDRESS = the address of the viewer button which generated the event
+CUSTOM.FLAG = 0
+CUSTOM.VALUE1 = which one of possible multiple events this is (1 based)
+CUSTOM.VALUE2 = total number of events needed to send the entire string
+CUSTOM.VALUE3 = the total size of the original string in bytes
+CUSTOM.TEXT = pipe character separated list of subpage names
+Example:
+SEND_COMMAND Panel, '^SCE-200,32001,0,0,0'
+If the subpage named TV_Favorite_SyFy enters the anchor position on a subpage viewer button with an address
+of 200, the following event would be transmitted to the master when the user had sent this command to the
+panel:
+CUSTOM.TYPE = EVENTID = 32001
+CUSTOM.ID = ADDRESS = 200
+CUSTOM.FLAG = 0
+CUSTOM.VALUE1 = 1
+CUSTOM.VALUE2 = 1
+CUSTOM.VALUE3 = 16
+CUSTOM.TEXT = TV_Favorite_SyFy
+Programming
+74 Modero X Series® G5 Programming Guide
+Button Commands (Cont.)
+?SCE Query Subpage Custom Event Numbers Command. Query the assigned subpage custom event numbers for a
+subpage viewer button. A series of custom events for the subpage viewer button may be sent as a response.
+Syntax:
+'?SCE-<vt addr range>'
+Variables:
+variable text address range = 1 - 4000.
+The format of the custom event transmitted to the master is as follows:
+CUSTOM.TYPE = EVENTID = the non-zero event number in the ^SCE command
+CUSTOM.ID = ADDRESS = the address of the viewer button which generated the event
+CUSTOM.FLAG = 0
+CUSTOM.VALUE1 = which one of possible multiple events this is (1 based)
+CUSTOM.VALUE2 = total number of events needed to send the entire string
+CUSTOM.VALUE3 = the total size of the original string in bytes
+CUSTOM.TEXT = pipe character separated list of subpage names
+Example:
+(Assuming the previous command, '^SCE-200,32001,0,0,0', has been sent…)
+SEND_COMMAND Panel, '?SCE-200'
+If the subpage named TV_Favorite_SyFy enters is in the anchor position on a subpage viewer button with an
+address of 200, the following event would be transmitted to the master when the user had sent this command to
+the panel:
+CUSTOM.TYPE = EVENTID = 32001
+CUSTOM.ID = ADDRESS = 200
+CUSTOM.FLAG = 0
+CUSTOM.VALUE1 = 1
+CUSTOM.VALUE2 = 1
+CUSTOM.VALUE3 = 16
+CUSTOM.TEXT = TV_Favorite_SyFy
+^SHA Subpage Hide All Command. Hide all subpages in a subpage viewer button.
+Syntax:
+'^SHA-<vt addr range>'
+Variables:
+variable text address range = 1 - 4000.
+Example:
+SEND_COMMAND Panel,"'^SHA-200'"
+Remove all subpages from subpage viewer button with address 200.
+^SHD Subpage Hide Command. This command will hide the named subpage and relocate the surrounding subpages
+as necessary to close the gap. If the subpage to be hidden is currently offscreen then it is removed without any
+other motion on the subpage viewer button.
+Syntax:
+"'^SHD-<vt addr range>,<name>,<optional time>'"
+Variables:
+variable text address range = 1 - 4000.
+name = name of subpage to hide. If name is __all, then all subpages are hidden.
+time - Can range from 0 to 30 and represents tenths of a second. This is the amount of time used to move the
+subpages around when subpages are hidden from a button.
+Example:
+SEND_COMMAND Panel,"'^SHD-200,menu1,10'"
+Remove the menu1 subpage from subpage viewer button with address 200 over one second.
+Programming
+75Modero X Series® G5 Programming Guide
+Button Commands (Cont.)
+^SHO Button Show/Hide Command. Show or hide a button.
+Syntax:
+"'^SHO-<vt addr range>,<command value>'"
+Variable:
+variable text address range = 1 - 4000.
+command value = (0= hide, 1= show).
+Example:
+SEND_COMMAND Panel,"'^SHO-500.504&510.515,0'"
+Hides buttons with variable text address range 500-504 & 510-515.
+^SPD Subpage Padding Command. Set the padding between subpages on a subpage viewer button.
+Syntax:
+'^SPD-<vt addr range>,<padding>
+Variables:
+variable text address range = 1 - 4000.
+Padding = percentage from 0 to 100 of the first subpage in a set to set as a padding between subpages. For
+a horizontal subpage viewer button it is a percentage of the width and for a vertical subpage viewer button it is
+a percentage of the height.
+Examples:
+SEND_COMMAND Panel, "'^SPD-400,10'"
+Set the padding between subpages in the set to 10% of the dimension of the first subpage in the set.
+^SSH Subpage Show Command. This command will perform one of three different operations based on the following
+conditions:
+1. If the named subpage is hidden in the set associated with the viewer button it will be shown in the anchor
+position.
+2. If the named subpage is not present in the set it will be added to the set and shown in the anchor position.
+3. If the named subpage is already present in the set and is not hidden, then the viewer button will move it to
+the anchor position. The anchor position is the location on the subpage viewer button specified by its
+weighting. This will either be left, center or right for horizontal subpage viewer buttons or top, center or bottom
+for vertical subpage viewer buttons. Surrounding subpages are relocated on the viewer button as needed to
+accommodate the described operations.
+Syntax:
+"'^SSH-<vt addr range>,<name>,<optional position>,<optional time>'"
+Variables:
+vt addr range - Specifies the address(es) of the subpage viewer button to be modified.
+name - Specifies the name of the subpage to be shown or added.
+position - Specifies where to add (or show) the named subpage in the set with 0 representing the beginning of
+the set. If this value is left out (or set to 65535) then the weighting value for the viewer button is used to place
+the new subpage, i.e. left/top, center or right/bottom. When using the weighting locations, set insertion
+positions can vary based on the current onscreen locations of existing subpages.
+time - Can range from 0 to 30 and represents tenths of a second. This is the amount of time used to move the
+subpages around when subpages are added or removed from a button.
+Examples:
+SEND_COMMAND Panel,"'^SSH-400,media1,0,10'"
+Add or show the media1 subpage in the anchor position over one second.
+Programming
+76 Modero X Series® G5 Programming Guide
+Button State Commands
+These Button State Commands are used in NetLinx Programming Language and are case insensitive.
+Button Commands (Cont.)
+^STG Subpage Toggle Command. If the named subpage is hidden, then this command activates a subpage show
+command. If the named subpage is present, then a subpage hide command is activated.
+Syntax:
+"'^STG-<vt addr range>,<name>,<optional position>,<optional time>'"
+Variables:
+vt addr range - Specifies the address(es) of the subpage viewer button to be modified.
+name - Specifies the name of the subpage to be shown or added.
+position - Specifies where to show the named subpage in the set with 0 representing the beginning of the set.
+If this value is left out (or set to 65535) then the weighting value for the viewer button is used to place the new
+subpage, i.e. left/top, center or right/bottom. When using the weighting locations, set insertion positions can
+vary based on the current onscreen locations of existing subpages. If the subpage is being hidden this
+parameter is ignored.
+time - Can range from 0 to 30 and represents tenths of a second. This is the amount of time used to move the
+subpages around when subpages are added or removed from a button.
+Examples:
+SEND_COMMAND Panel,"'^STG-400,media1,0,10'"
+Show or hide the media1 subpage over one second.
