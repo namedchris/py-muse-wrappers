@@ -1,0 +1,70 @@
+"EOC-202"
+Report Time Stamp: Fri Feb 06 15:09:31 2026
+
+
+Font Name,File,References
+Arial,arial.ttf,45
+Arial Italic,ariali.ttf,1
+Open Sans Regular,opensans-regular.ttf,107
+
+Total number of fonts utilized:  3
+
+Image Name,Resolution,Size
+background.png,1280 x 800,445.8 KB
+DropboxThumb.png,48 x 48,3.5 KB
+DropboxWindow.png,72 x 72,5.8 KB
+
+Total number of images utilized:  3
+
+Total size of all images.......:  455.1 KB
+
+No dynamic images were utilized.
+
+No sounds were utilized.
+
+Source Name,URL,Refresh,Format,Listview Mapping,Force Reload
+"streams","http://nsb-202-controller-1.av.ilstu.edu:1880/files/streams.csv",1,CSV (Headers),yes,yes
+
+Total number of dynamic data sources utilized:  1
+
+Sensor codes utilized:
+
+Sensor Type,Channel Port:Code,Level Port:Code
+"Light Sensor", 1
+"Motion Sensor", 1
+"VoIP Cmd Port", 1
+
+
+No IR Ports were utilized.
+
+Function codes utilized:
+
+Page Name,Button Name,Channel Port:Code,Address Port:Code,Level Port:Code,Description
+"Page"
+,"Cancel", 3:13, 3:13,
+,"Apply", 3:15, 3:15,
+"Wall Mode"
+,"Video Wall", 1:5, 1:5,
+
+
+No command output strings were utilized
+
+
+
+No string outputs were utilized
+
+
+
+No Sub-Page Sets were utilized.
+
+No Sub-Page View buttons were utilized.
+
+No Listview buttons were utilized.
+
+No drop-target groups were defined.
+
+No draggable buttons are assigned.
+
+No drop-targets were utilized.
+
+End of report

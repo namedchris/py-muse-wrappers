@@ -2,7 +2,7 @@ from devices.touchpad import Touchpad
 
 def test():
     # Create touchpad with config
-    touchpad = Touchpad("AMX-10001", "tests/EOC-202.CSV")
+    touchpad = Touchpad("AMX-10001", "tests/test_config.CSV")
 
     # Get a button
     button = touchpad.find_button_by_name("Cancel")
