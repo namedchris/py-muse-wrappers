@@ -5,10 +5,8 @@ def test():
     touchpad = Touchpad("AMX-10001", "tests/EOC-202.CSV")
 
     # Get a button
-    first_page = list(touchpad.pages.keys())[0]
-    first_button_key = list(touchpad.pages[first_page].keys())[0]
-    button = touchpad.pages[first_page][first_button_key]
-
+    button = touchpad.find_button_by_name("Cancel")
+    assert button is not None
     # Track calls
     calls = []
 
