@@ -171,7 +171,6 @@ class Button(Component):
         cmd_string = f"^BSF-{button.address},{value}"
         button.send_command(cmd_string)
 
-
     def submit_button_text(button):
         """
         Button Submit Text Command.
