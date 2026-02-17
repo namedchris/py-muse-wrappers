@@ -1,4 +1,4 @@
-from touchpad.component import Component
+from .component import Component
 
 
 class Page(Component):

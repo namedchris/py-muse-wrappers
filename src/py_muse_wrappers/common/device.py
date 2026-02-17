@@ -1,5 +1,5 @@
 import logging
-from common.callbacks import ButtonCallback
+from .callbacks import ButtonCallback
 
 logger = logging.getLogger(__name__)
 

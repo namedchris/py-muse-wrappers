@@ -1,4 +1,4 @@
-from touchpad.touchpad import Touchpad
+from py_muse_wrappers.touchpad.touchpad import Touchpad
 
 def test():
     # Create touchpad with config

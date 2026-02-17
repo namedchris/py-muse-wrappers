@@ -1,6 +1,6 @@
 from typing import Callable, Optional
-from touchpad.component import Component
-from common.callbacks import ButtonCallback
+from .component import Component
+from py_muse_wrappers.common.callbacks import ButtonCallback
 
 # Justification constants
 JUSTIFICATION_ABSOLUTE = 0

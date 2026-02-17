@@ -1,10 +1,10 @@
 import csv
 from typing import Optional, Dict, List
-from common.device import Device
-from common.callbacks import ButtonCallback
-from touchpad.button import Button
-from touchpad.page import Page
-from touchpad.component import Component
+from py_muse_wrappers.common.device import Device
+from py_muse_wrappers.common.callbacks import ButtonCallback
+from .button import Button
+from .page import Page
+from .component import Component
 
 
 class Touchpad(Device):

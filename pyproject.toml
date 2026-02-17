@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "py_muse_wrappers"
+version = "0.1.0"
+description = ""
+authors = ["Chris Morgan <crmorga@ilstu.edu>"]
+license = "LGPL3"
+readme = "README.md"
+packages = [{include = "py_muse_wrappers", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]
