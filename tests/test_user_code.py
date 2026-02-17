@@ -1,4 +1,4 @@
-from devices.touchpad import Touchpad
+from touchpad.touchpad import Touchpad
 
 def test():
     # Create touchpad with config
