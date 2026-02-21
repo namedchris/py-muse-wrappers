@@ -38,21 +38,10 @@ class Button(Component):
         'background_color', 'opacity',
         'bitmap', 'bitmap_index', 'bitmap_justification', 'bitmap_x', 'bitmap_y',
         'video_fill', 'bargraph_high', 'bargraph_low', 'level',
-        'streaming_url', 'subpage_padding', 'is_on'
+        'streaming_url', 'subpage_padding', 'is_selected'
     }
 
-    # Map state attributes to command functions (class-level, shared by all instances)
-    _ATTR_TO_COMMAND = {}
-
-    # Adds function mappings to _ATTR_TO_COMMAND
-    def register_command(*attributes, mapping = _ATTR_TO_COMMAND):
-        def decorator(func, mapping = mapping):
-            for attribute in attributes:
-                mapping[attribute] = func
-            return func
-        return decorator
-    
-    def __init__(self, callback: ButtonCallback, name: str, address_port: int, address_code: int, channel_port:int, channel_code: int, level_port:int = None, level_address: int =None, level_code: int= None,  send_command: Optional[Callable[[str], None]] = None):
+    def __init__(self, callback: ButtonCallback, name: str, address_port: int, address_code: int, set_selected: Callable, set_level: Callable, send_command: Optional[Callable[[str], None]] = None):
         """
         Initialize button.
 
@@ -73,13 +62,13 @@ class Button(Component):
         # Set core attributes
         self.address_port = address_port
         self.address = address_code
-        self.channel_port = channel_port
-        self.channel = channel_code
+        self.set_selected = set_selected # underlying channel reference
         self.callback = callback
         self.send_command = send_command
+        self.set_level = set_level
 
         # Set state attributes with defaults (triggers __setattr__)
-        self.is_on = False
+        self.is_selected = False
         self.text = ""
         self.visible = True
         self.enabled = True
@@ -94,12 +83,34 @@ class Button(Component):
         self.video_fill = None
         self.bargraph_high = None
         self.bargraph_low = None
-        self.level = None
+        self.level = 0
         self.streaming_url = None
         self.subpage_padding = None
 
         # Clear dirty flags after initialization (defaults shouldn't be dirty)
         self._dirty_attrs.clear()
+
+        # Build instance-level command map
+        self.command_map = {
+            'text': self.set_text,
+            'visible': self.set_button_visible,
+            'enabled': self.set_button_enabled,
+            'focused': self.set_button_focus,
+            'background_color': self.set_background_color,
+            'opacity': self.set_button_opacity,
+            'bitmap': self.set_state_bitmap,
+            'bitmap_index': self.set_state_bitmap,
+            'bitmap_justification': self.set_state_bitmap,
+            'bitmap_x': self.set_state_bitmap,
+            'bitmap_y': self.set_state_bitmap,
+            'video_fill': self.set_video_fill,
+            'bargraph_high': self.set_bargraph_high,
+            'bargraph_low': self.set_bargraph_low,
+            'level': lambda: self.set_level(self.level),
+            'streaming_url': self.set_streaming_media,
+            'subpage_padding': self.set_subpage_padding,
+            'is_selected': lambda: self.set_selected(self.is_selected)
+        }
 
     def __setattr__(self, name, value):
         """
@@ -113,8 +124,8 @@ class Button(Component):
         object.__setattr__(self, name, value)
 
         # Add command callable to dirty set if attribute has one
-        if name in self._ATTR_TO_COMMAND:
-            self._dirty_attrs.add(self._ATTR_TO_COMMAND[name])
+        if hasattr(self, 'command_map') and name in self.command_map:
+            self._dirty_attrs.add(self.command_map[name])
 
 
 
@@ -130,15 +141,15 @@ class Button(Component):
         Args:
             force: If True, marks all command callables as dirty to force full re-render
         """
-        if self._send_command is None:
+        if self.send_command is None:
             return
         if force:
             # Mark all command callables as dirty
-            self._dirty_attrs = set(self._ATTR_TO_COMMAND.values())
-        
+            self._dirty_attrs = set(self.command_map.values())
+
         # Call each dirty command function (set automatically deduplicates)
         for command in self._dirty_attrs:
-            command(self)
+            command()
 
         # Clear dirty flags after successful render
         self._dirty_attrs.clear()
@@ -159,257 +170,172 @@ class Button(Component):
         cmd_string = f"?SCE-{self.address}"
         self.send_command(cmd_string)
 
-    @register_command('focused')
-    def set_button_focus(button):
+    def set_button_focus(self):
         """
-        Button Focus Command. Reads from button.state["focused"].
-
-        Args:
-            button: The button object.
+        Button Focus Command.
         """
-        value = 1 if button.state.get("focused") else 0
-        cmd_string = f"^BSF-{button.address},{value}"
-        button.send_command(cmd_string)
+        value = 1 if self.focused else 0
+        cmd_string = f"^BSF-{self.address},{value}"
+        self.send_command(cmd_string)
 
-    def submit_button_text(button):
+    def submit_button_text(self):
         """
         Button Submit Text Command.
         Causes button text area to send its text as a string to the NetLinx Master.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"^BSM-{button.address}"
-        button.send_command(cmd_string)
+        cmd_string = f"^BSM-{self.address}"
+        self.send_command(cmd_string)
 
 
-    def clear_page_flip(button):
+    def clear_page_flip(self):
         """
         Clear Page Flip Command.
         Clear all page flips from button release event action.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"^CPF-{button.address}"
-        button.send_command(cmd_string)
+        cmd_string = f"^CPF-{self.address}"
+        self.send_command(cmd_string)
 
-    @register_command('bargraph_high')
-    def set_bargraph_high(button):
+    def set_bargraph_high(self):
         """
-        Set Bargraph High Range Command. Reads from button.state["bargraph_high"].
-
-        Args:
-            button: The button object.
+        Set Bargraph High Range Command.
         """
-        high_value = button.state.get("bargraph_high")
-        if high_value is not None:
-            cmd_string = f"^GLH-{button.address},{high_value}"
-            button.send_command(cmd_string)
+        if self.bargraph_high is not None:
+            cmd_string = f"^GLH-{self.address},{self.bargraph_high}"
+            self.send_command(cmd_string)
 
-    @register_command('bargraph_low')
-    def set_bargraph_low(button):
+    def set_bargraph_low(self):
         """
-        Set Bargraph Low Range Command. Reads from button.state["bargraph_low"].
-
-        Args:
-            button: The button object.
+        Set Bargraph Low Range Command.
         """
-        low_value = button.state.get("bargraph_low")
-        if low_value is not None:
-            cmd_string = f"^GLL-{button.address},{low_value}"
-            button.send_command(cmd_string)
+        if self.bargraph_low is not None:
+            cmd_string = f"^GLL-{self.address},{self.bargraph_low}"
+            self.send_command(cmd_string)
 
-    
-    @register_command('enabled')
-    def set_button_enabled(button):
+
+    def set_button_enabled(self):
         """
-        Button Enable Command. Reads from button.state["enabled"].
-
-        Args:
-            button: The button object.
+        Button Enable Command.
         """
-        value = 1 if button.state.get("enabled", True) else 0
-        cmd_string = f"^ENA-{button.address},{value}"
-        button.send_command(cmd_string)
+        value = 1 if self.enabled else 0
+        cmd_string = f"^ENA-{self.address},{value}"
+        self.send_command(cmd_string)
 
 
-    def subpage_hide_all(button):
+    def subpage_hide_all(self):
         """
         Subpage Hide All Command.
         Hide all subpages in a subpage viewer button.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"^SHA-{button.address}"
-        button.send_command(cmd_string)
+        cmd_string = f"^SHA-{self.address}"
+        self.send_command(cmd_string)
 
-    @register_command('visible')
-    def set_button_visible(button):
-        """
-        Button Show/Hide Command. Reads from button.state["visible"].
+    def set_button_visible(self):
+        value = 1 if self.visible else 0
+        cmd_string = f"^SHO-{self.address},{value}"
+        self.send_command(cmd_string)
 
-        Args:
-            button: The button object.
-        """
-        value = 1 if button.state.get("visible", True) else 0
-        cmd_string = f"^SHO-{button.address},{value}"
-        button.send_command(cmd_string)
-
-    @register_command('subpage_padding')
-    def set_subpage_padding(button):
-        """
-        Subpage Padding Command. Reads from button.state["subpage_padding"].
-
-        Args:
-            button: The button object.
-        """
-        padding = button.state.get("subpage_padding")
-        if padding is not None:
-            cmd_string = f"^SPD-{button.address},{padding}"
-            button.send_command(cmd_string)
+    def set_subpage_padding(self):
+        if self.subpage_padding is not None:
+            cmd_string = f"^SPD-{self.address},{self.subpage_padding}"
+            self.send_command(cmd_string)
 
 
     # ============================================================================
     # Button State (from button_state_txt)
     # ============================================================================
-    @register_command('background_color')
-    def set_background_color(button):
+    def set_background_color(self):
         """
-        Background Color Fill Command. Reads from button.state["background_color"].
-
-        Args:
-            button: The button object.
+        Background Color Fill Command.
         """
-        color = button.state.get("background_color")
-        if color is not None:
+        if self.background_color is not None:
             # Use state "0" for all states
-            cmd_string = f"^BCF-{button.address},0,{color}"
-            button.send_command(cmd_string)
+            cmd_string = f"^BCF-{self.address},0,{self.background_color}"
+            self.send_command(cmd_string)
 
-    @register_command('bitmap','bitmap_index','bitmap_justification','bitmap_x','bitmap_y')
-    def set_state_bitmap(button):
+    def set_state_bitmap(self):
         """
-        Set State Bitmap Command. Reads from button.state["bitmap"], "bitmap_index",
-        "bitmap_justification", "bitmap_x", "bitmap_y".
-
-        Args:
-            button: The button object.
+        Set State Bitmap Command.
         """
-        bitmap = button.state.get("bitmap")
-        if bitmap is not None:
-            index = button.state.get("bitmap_index", 1)
-            just = button.state.get("bitmap_justification")
+        if self.bitmap is not None:
+            index = self.bitmap_index
+            just = self.bitmap_justification
 
-            parts = [f"^BMP-{button.address}", "0", bitmap, str(index)]
+            parts = [f"^BMP-{self.address}", "0", self.bitmap, str(index)]
 
             if just is not None:
                 parts.append(str(just))
                 if just == 0:  # Absolute positioning
-                    x = button.state.get("bitmap_x")
-                    y = button.state.get("bitmap_y")
+                    x = self.bitmap_x
+                    y = self.bitmap_y
                     if x is not None and y is not None:
                         parts.append(str(x))
                         parts.append(str(y))
 
             cmd_string = ",".join(parts)
-            button.send_command(cmd_string)
+            self.send_command(cmd_string)
 
 
-    def query_state_bitmap(button):
+    def query_state_bitmap(self):
         """
         Query State Bitmap Command.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"?BMP-{button.address},0"
-        button.send_command(cmd_string)
+        cmd_string = f"?BMP-{self.address},0"
+        self.send_command(cmd_string)
 
-    @register_command('opacity')
-    def set_button_opacity(button):
+    def set_button_opacity(self):
         """
-        Button Opacity Command. Reads from button.state["opacity"].
-
-        Args:
-            button: The button object.
+        Button Opacity Command.
         """
-        opacity = button.state.get("opacity")
-        if opacity is not None:
-            cmd_string = f"^BOP-{button.address},0,{opacity}"
-            button.send_command(cmd_string)
+        if self.opacity is not None:
+            cmd_string = f"^BOP-{self.address},0,{self.opacity}"
+            self.send_command(cmd_string)
 
-    @register_command('video_fill')
-    def set_video_fill(button):
+    def set_video_fill(self):
         """
-        Button State Video Fill Command. Reads from button.state["video_fill"].
-
-        Args:
-            button: The button object.
+        Button State Video Fill Command.
         """
-        video_state = button.state.get("video_fill")
-        if video_state is not None:
-            cmd_string = f"^BOS-{button.address},0,{video_state}"
-            button.send_command(cmd_string)
+        if self.video_fill is not None:
+            cmd_string = f"^BOS-{self.address},0,{self.video_fill}"
+            self.send_command(cmd_string)
 
 
-    def query_video_fill(button):
+    def query_video_fill(self):
         """
         Query Button State Video Fill Command.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"?BOS-{button.address},0"
-        button.send_command(cmd_string)
+        cmd_string = f"?BOS-{self.address},0"
+        self.send_command(cmd_string)
 
 
-    def query_bitmap_justification(button):
+    def query_bitmap_justification(self):
         """
         Query Bitmap Justification Command.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"?JSB-{button.address},0"
-        button.send_command(cmd_string)
+        cmd_string = f"?JSB-{self.address},0"
+        self.send_command(cmd_string)
 
-    @register_command('streaming_url')
-    def set_streaming_media(button):
+    def set_streaming_media(self):
         """
-        Button State Streaming Digital Media Command. Reads from button.state["streaming_url"].
-
-        Args:
-            button: The button object.
+        Button State Streaming Digital Media Command.
         """
-        url = button.state.get("streaming_url")
-        if url is not None:
-            cmd_string = f"^SDM-{button.address},0,{url}"
-            button.send_command(cmd_string)
+        if self.streaming_url is not None:
+            cmd_string = f"^SDM-{self.address},0,{self.streaming_url}"
+            self.send_command(cmd_string)
 
-    @register_command('text')
-    def set_text(button):
+    def set_text(self):
         """
-        Set State Text Command. Reads from button.state["text"].
-
-        Args:
-            button: The button object.
+        Set State Text Command.
         """
-        text = button.state.get("text", "")
-        cmd_string = f"^TXT-{button.address},0,{text}"
-        button.send_command(cmd_string)
+        cmd_string = f"^TXT-{self.address},0,{self.text}"
+        self.send_command(cmd_string)
 
 
-    def query_text(button):
+    def query_text(self):
         """
         Query State Text Command.
-
-        Args:
-            button: The button object.
         """
-        cmd_string = f"?TXT-{button.address},0"
-        button.send_command(cmd_string)
+        cmd_string = f"?TXT-{self.address},0"
+        self.send_command(cmd_string)
 
     #endregion
 

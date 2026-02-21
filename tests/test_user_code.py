@@ -1,8 +1,7 @@
 from py_muse_wrappers.touchpad.touchpad import Touchpad
 
-def test():
-    # Create touchpad with config
-    touchpad = Touchpad("AMX-10001", "tests/test_config.CSV")
+def test(mock_device_factory):
+    touchpad = Touchpad("AMX-10001", "tests/test_config.CSV", mock_device_factory)
 
     # Get a button
     button = touchpad.find_button_by_name("Cancel")

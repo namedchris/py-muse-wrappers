@@ -1,8 +1,16 @@
 import logging
 from .callbacks import ButtonCallback
-
+from typing import Callable
 logger = logging.getLogger(__name__)
 
+def default_device_factory(name: str):
+        device = None
+        try:
+            from mojo import context
+            return context.devices.get(name)
+        except Exception as e:
+            logger.error(f"Failed to get device '{name}': {e} \nHint: \n\t Running tests without controller? Provide an appropriate device factory fixture.")
+            raise e
 
 class Device:
     """
@@ -11,26 +19,16 @@ class Device:
     Handles 0-based to 1-based port conversion automatically.
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str, device_factory: Callable = default_device_factory):
         """
         Initialize wrapper with a MUSE device.
 
         Args:
             name: Device name for context.devices.get()
         """
-        self.device = None
-        try:
-            from mojo import context
-            self.device = context.devices.get(name)
-        except Exception as e:
-            logger.warning(f"Failed to get device '{name}': {e} (running without controller?)")
+        self.device = device_factory(name)
 
     def make_button_callback(self, port: int, address: int):
-        port = port - 1
         callback = ButtonCallback()
-        try:
-            if self.device:
-                self.device.port[port].button[address].watch(callback)
-        except Exception as e:
-            logger.warning(f"Failed to watch button at port {port + 1}, address {address}: {e} (running without controller?)")
+        self.device.port[port].button[address].watch(callback)
         return callback

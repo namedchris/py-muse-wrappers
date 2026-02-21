@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "py_muse_wrappers"
-version = "0.1.0"
+name = "py-muse-wrappers"
+version = "0.1.1"
 description = ""
 authors = ["Chris Morgan <crmorga@ilstu.edu>"]
 license = "LGPL3"
