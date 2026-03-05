@@ -96,8 +96,7 @@ class Touchpad(Device):
                     channel_parts = channel_str.split(':')
                     channel_port = int(channel_parts[0].strip())
                     channel_code = int(channel_parts[1].strip())
-                    def set_selected(value):
-                        self.device.port[channel_port].channel[channel_code] = value
+                    set_selected = lambda val, p=channel_port, c=channel_code: setattr(self.device.port[p].channel, str(c), val)
                 except Exception as e:
                     logger.error(f"Failed to define set_selected callable: {e} ")
 
@@ -118,15 +117,13 @@ class Touchpad(Device):
                         level_parts = row[4].strip().split(':')
                         level_port = int(level_parts[0].strip())
                         level_code = int(level_parts[1].strip())
-                    def set_level(value):
-                        self.device.port[level_port].level[level_code] = value
+                    set_level = lambda val, p=level_port, c=level_code: setattr(self.device.port[p].level, str(c), val)
 
                 except Exception as e:
                     logger.error(f"Failed to define set_level callable: {e}")
 
                 try:
-                    def send_command(command):
-                        self.device.port[address_port].send_command(command)
+                    send_command = lambda command, p=address_port: self.device.port[p].send_command(command)
                 except Exception as e:
                     logger.error(f"Failed to define button send command: {e}")
 

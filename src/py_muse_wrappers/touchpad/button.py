@@ -60,14 +60,17 @@ class Button(Component):
         super().__init__(name)
 
         # Set core attributes
+        self.name = name
         self.address_port = address_port
         self.address = address_code
         self.set_selected = set_selected # underlying channel reference
         self.callback = callback
         self.send_command = send_command
-        self.set_level = set_level
+        self.set_level =self.make_level_setter(set_level)    # Wrap set_level with clamping logic
 
-        # Set state attributes with defaults (triggers __setattr__)
+        self.auto_sync = True  # Automatically call render() after state changes (can be disabled for batch updates)
+
+        # Set state attributes with defaults 
         self.is_selected = False
         self.text = ""
         self.visible = True
@@ -106,7 +109,7 @@ class Button(Component):
             'video_fill': self.set_video_fill,
             'bargraph_high': self.set_bargraph_high,
             'bargraph_low': self.set_bargraph_low,
-            'level': lambda: self.set_level(self.level),
+            'level': self.set_level,
             'streaming_url': self.set_streaming_media,
             'subpage_padding': self.set_subpage_padding,
             'is_selected': lambda: self.set_selected(self.is_selected)
@@ -122,9 +125,11 @@ class Button(Component):
         """
         # Always do normal assignment
         object.__setattr__(self, name, value)
-
+       
         # Add command callable to dirty set if attribute has one
         if hasattr(self, 'command_map') and name in self.command_map:
+            if self.auto_sync:
+                self.command_map[name]()  # Immediately call command for auto_sync
             self._dirty_attrs.add(self.command_map[name])
 
 
@@ -154,6 +159,27 @@ class Button(Component):
         # Clear dirty flags after successful render
         self._dirty_attrs.clear()
     
+
+    # adds clamping to set_level
+    def make_level_setter(self,set_level):
+        """
+        Clamp level to bargraph range if both are set.
+        """
+        def func():
+            if self.bargraph_low is None or self.bargraph_high is None:
+                raise ValueError("Cannot set level when bargraph range is undefined. Set bargraph_low and bargraph_high before setting level.") 
+            if self.level is None:
+                raise ValueError("Level is not defined. Cannot set level without a value.")
+            clamped_level = max(self.bargraph_low, min(self.bargraph_high, self.level))
+            if clamped_level != self.level:
+                print(f"Clamping level from {self.level} to {clamped_level}")
+                self.level = clamped_level  # Update level to clamped value, __setattr__ will try again with clamped value
+            else: 
+                set_level(self.level)
+
+        return func
+
+
 #region Button Commande
 
     # ============================================================================
@@ -199,17 +225,24 @@ class Button(Component):
         """
         Set Bargraph High Range Command.
         """
-        if self.bargraph_high is not None:
-            cmd_string = f"^GLH-{self.address},{self.bargraph_high}"
-            self.send_command(cmd_string)
+        if self.bargraph_low is None:
+            if self.bargraph_high <= self.bargraph_low:     
+                raise ValueError(f"bargraph_high ({self.bargraph_high}) must be greater than bargraph_low ({self.bargraph_low})")
+
+        print(f"Setting bargraph high: {self.bargraph_high} for button {self.name} at address {self.address}")
+        cmd_string = f"^GLH-{self.address},{self.bargraph_high}"
+        self.send_command(cmd_string)
 
     def set_bargraph_low(self):
         """
         Set Bargraph Low Range Command.
         """
-        if self.bargraph_low is not None:
-            cmd_string = f"^GLL-{self.address},{self.bargraph_low}"
-            self.send_command(cmd_string)
+        if self.bargraph_high is not None:
+            if self.bargraph_low >= self.bargraph_high:
+                raise ValueError(f"bargraph_low ({self.bargraph_low}) must be less than bargraph_high ({self.bargraph_high})")           
+        print(f"Setting bargraph low: {self.bargraph_low} for button {self.name} at address {self.address}")
+        cmd_string = f"^GLL-{self.address},{self.bargraph_low}"
+        self.send_command(cmd_string)
 
 
     def set_button_enabled(self):
