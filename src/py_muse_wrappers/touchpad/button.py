@@ -225,7 +225,7 @@ class Button(Component):
         """
         Set Bargraph High Range Command.
         """
-        if self.bargraph_low is None:
+        if self.bargraph_low is not None:
             if self.bargraph_high <= self.bargraph_low:     
                 raise ValueError(f"bargraph_high ({self.bargraph_high}) must be greater than bargraph_low ({self.bargraph_low})")
 

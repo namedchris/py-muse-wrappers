@@ -1,3 +1,4 @@
+import pytest
 from py_muse_wrappers.touchpad.touchpad import Touchpad
 
 def test(mock_device_factory):
