@@ -26,15 +26,3 @@ class Component(ABC):
             name: Component identifier
         """
         self.name = name
-
-
-    @abstractmethod
-    def render(self):
-        """
-        Render this component.
-
-        Override this to implement component-specific rendering logic.
-        """
-        pass
-
-   

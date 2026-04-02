@@ -32,14 +32,6 @@ class Button(Component):
         button.render()  # Only sends for text and visible
     """
 
-    # Define which attributes are state (renderable) attributes
-    STATE_ATTRIBUTES = {
-        'text', 'visible', 'enabled', 'focused',
-        'background_color', 'opacity',
-        'bitmap', 'bitmap_index', 'bitmap_justification', 'bitmap_x', 'bitmap_y',
-        'video_fill', 'bargraph_high', 'bargraph_low', 'level',
-        'streaming_url', 'subpage_padding', 'is_selected'
-    }
 
     def __init__(self, callback: ButtonCallback, name: str, address_port: int, address_code: int, set_selected: Callable, set_level: Callable, send_command: Optional[Callable[[str], None]] = None):
         """
@@ -53,8 +45,6 @@ class Button(Component):
             callback: ButtonCallback for button events
             send_command: Optional callback to send (if None, are no-ops)
         """
-        # Track which attributes have been modified since last render
-        self._dirty_attrs = set()
 
         # Call parent init
         super().__init__(name)
@@ -67,8 +57,6 @@ class Button(Component):
         self.callback = callback
         self.send_command = send_command
         self.set_level =self.make_level_setter(set_level)    # Wrap set_level with clamping logic
-
-        self.auto_sync = True  # Automatically call render() after state changes (can be disabled for batch updates)
 
         # Set state attributes with defaults 
         self.is_selected = False
@@ -91,9 +79,7 @@ class Button(Component):
         self.subpage_padding = None
 
         # Clear dirty flags after initialization (defaults shouldn't be dirty)
-        self._dirty_attrs.clear()
-
-        # Build instance-level command map
+        # Build instance-level command map after attribute initialization to avoid sending default values as commands
         self.command_map = {
             'text': self.set_text,
             'visible': self.set_button_visible,
@@ -128,37 +114,7 @@ class Button(Component):
        
         # Add command callable to dirty set if attribute has one
         if hasattr(self, 'command_map') and name in self.command_map:
-            if self.auto_sync:
-                self.command_map[name]()  # Immediately call command for auto_sync
-            self._dirty_attrs.add(self.command_map[name])
-
-
-
-    def render(self, force=False):
-        """
-        Render button state to device by sending for dirty callables.
-
-        Only sends for callables that have been marked dirty since the
-        last render() call. The set automatically handles deduplication.
-
-        This is idempotent and safe to call multiple times (sends nothing if no changes).
-
-        Args:
-            force: If True, marks all command callables as dirty to force full re-render
-        """
-        if self.send_command is None:
-            return
-        if force:
-            # Mark all command callables as dirty
-            self._dirty_attrs = set(self.command_map.values())
-
-        # Call each dirty command function (set automatically deduplicates)
-        for command in self._dirty_attrs:
-            command()
-
-        # Clear dirty flags after successful render
-        self._dirty_attrs.clear()
-    
+            self.command_map[name]()  
 
     # adds clamping to set_level
     def make_level_setter(self,set_level):
